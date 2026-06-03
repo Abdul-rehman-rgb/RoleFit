@@ -1,3 +1,35 @@
+/** Coerce AI/DB values into string arrays for UI .map() calls. */
+export function toListArray(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (item && typeof item === "object" && item.name) return String(item.name).trim();
+        if (item != null) return String(item).trim();
+        return "";
+      })
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return toListArray(parsed);
+      } catch {
+        // fall through
+      }
+    }
+    return trimmed
+      .split(/\n|•|;/)
+      .map((s) => s.replace(/^[-*]\s*/, "").trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 function unwrapReport(raw) {
   if (!raw) return null;
   if (Array.isArray(raw)) return raw[0] || null;
@@ -39,17 +71,17 @@ function deepFindMatchScore(obj, depth = 0) {
 }
 
 function estimateMatchScore(report) {
-  const core = report.core_skills_match || report.coreSkillsMatch || [];
-  const missing = report.missing_skills || report.missingSkills || [];
-  const coreLen = Array.isArray(core) ? core.length : 0;
-  const missingLen = Array.isArray(missing) ? missing.length : 0;
+  const core = toListArray(report.core_skills_match ?? report.coreSkillsMatch);
+  const missing = toListArray(report.missing_skills ?? report.missingSkills);
+  const coreLen = core.length;
+  const missingLen = missing.length;
 
   if (coreLen + missingLen > 0) {
     return Math.round((coreLen / (coreLen + missingLen)) * 100);
   }
 
-  const sLen = (report.strengths || []).length;
-  const wLen = (report.weaknesses || []).length;
+  const sLen = toListArray(report.strengths).length;
+  const wLen = toListArray(report.weaknesses).length;
   if (sLen + wLen > 0) {
     return Math.min(95, Math.max(20, Math.round((sLen / (sLen + wLen)) * 100)));
   }
@@ -82,10 +114,12 @@ export function normalizeReport(raw) {
 
   const matchScore = extractMatchScore(report);
 
-  const coreSkills =
-    report.core_skills_match || report.coreSkillsMatch || [];
-  const missingSkills =
-    report.missing_skills || report.missingSkills || [];
+  const coreSkills = toListArray(
+    report.core_skills_match ?? report.coreSkillsMatch
+  );
+  const missingSkills = toListArray(
+    report.missing_skills ?? report.missingSkills
+  );
 
   return {
     format: "skills",
@@ -101,10 +135,10 @@ export function normalizeReport(raw) {
       report.overall_assessment ||
       report.overallAssessment ||
       "",
-    coreSkillsMatch: Array.isArray(coreSkills) ? coreSkills : [],
-    missingSkills: Array.isArray(missingSkills) ? missingSkills : [],
-    strengths: report.strengths || [],
-    weaknesses: report.weaknesses || [],
+    coreSkillsMatch: coreSkills,
+    missingSkills: missingSkills,
+    strengths: toListArray(report.strengths),
+    weaknesses: toListArray(report.weaknesses),
     hiringRecommendation:
       report.hiring_recommendation ||
       report.hiringRecommendation ||
@@ -113,10 +147,10 @@ export function normalizeReport(raw) {
       "",
     interviewNotes: report.interview_notes || report.interviewNotes || "",
     generatedAt: report.generatedAt || report.createdAt || null,
-    technicalQuestions: report.technicalQuestions || [],
-    behavioralQuestions: report.behavioralQuestions || [],
-    skillGaps: report.skillGaps || [],
-    preparationPlan: report.preparationPlan || [],
+    technicalQuestions: toListArray(report.technicalQuestions),
+    behavioralQuestions: toListArray(report.behavioralQuestions),
+    skillGaps: toListArray(report.skillGaps),
+    preparationPlan: toListArray(report.preparationPlan),
   };
 }
 

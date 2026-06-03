@@ -49,7 +49,8 @@ function MatchScoreRing({ score }) {
 }
 
 function SkillTags({ skills, variant }) {
-  if (!skills?.length) {
+  const list = Array.isArray(skills) ? skills : [];
+  if (!list.length) {
     return <p className="text-sm text-neutral-500">None listed</p>;
   }
   const styles =
@@ -59,7 +60,7 @@ function SkillTags({ skills, variant }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {skills.map((skill) => (
+      {list.map((skill) => (
         <span
           key={skill}
           className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${styles}`}
@@ -72,10 +73,11 @@ function SkillTags({ skills, variant }) {
 }
 
 function BulletList({ items, variant }) {
-  if (!items?.length) return null;
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return null;
   return (
     <ul className="space-y-3">
-      {items.map((item, i) => (
+      {list.map((item, i) => (
         <li
           key={i}
           className={`flex gap-3 rounded-xl border px-4 py-3 text-sm leading-relaxed ${
